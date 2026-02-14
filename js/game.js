@@ -1,6 +1,6 @@
 // Dummynation Clone - Complex Logic
 // Author: Veladhithya5-oss
-// Features: GeoJSON Map, AI, Diplomacy, Save/Load
+// Features: Full GeoJSON Map (Requires Server/Online), AI, Diplomacy, Save/Load
 
 const canvas = document.getElementById('map-canvas');
 const ctx = canvas.getContext('2d');
@@ -63,18 +63,18 @@ class Country {
 
         // Stats
         const data = COUNTRY_DATA[this.id] || this.generateStats();
-        this.gdp = data.gdp; // Billions
-        this.population = data.pop; // Millions
-        this.military = data.mil; // Power score 0-100
+        this.gdp = data.gdp;
+        this.population = data.pop;
+        this.military = data.mil;
         this.color = data.color || this.randomColor();
         this.originalColor = this.color;
 
         // State
-        this.money = this.gdp / 10; // Initial treasury
-        this.manpower = this.population * 10; // Initial troops
-        this.relations = {}; // Map of countryId -> score (-100 to 100)
-        this.isAtWar = []; // List of enemy IDs
-        this.isAllied = []; // List of ally IDs
+        this.money = this.gdp / 10;
+        this.manpower = this.population * 10;
+        this.relations = {};
+        this.isAtWar = [];
+        this.isAllied = [];
     }
 
     parseGeometry(geometry) {
@@ -88,7 +88,6 @@ class Country {
     }
 
     calculateCenter() {
-        // Simple centroids
         let x = 0, y = 0, pts = 0;
         this.paths.forEach(path => {
             path.forEach(pt => {
@@ -97,22 +96,15 @@ class Country {
                 pts++;
             });
         });
-        // Normalize map coords (GeoJSON is often lat/long)
-        // Simple Equirectangular projection: x = lon, y = -lat (canvas y is down)
-        // We need to scale these to be visible. Longitude -180 to 180, Lat -90 to 90
-        // Canvas Center: width/2, height/2
-
-        // Storing RAW coordinates first, verify scale in render
-        return { x: x / pts, y: y / pts };
+        return { x: x / (pts || 1), y: y / (pts || 1) };
     }
 
     generateStats() {
-        // Procedural generation for minor nations
         return {
             gdp: 10 + Math.random() * 500,
             pop: 1 + Math.random() * 50,
             mil: 10 + Math.random() * 30,
-            color: '#64748b' // Default slate for minors
+            color: '#64748b'
         };
     }
 
@@ -141,13 +133,12 @@ async function init() {
         gameState.countries = data.features.map(f => new Country(f));
 
         // Setup Player
-        gameState.playerCountryId = 'USA';
-        // Fallback if geojson doesn't have IDs
         const player = gameState.countries.find(c => c.name === 'United States');
         if (player) gameState.playerCountryId = player.id;
+        else gameState.playerCountryId = gameState.countries[0].id;
 
         // Auto-Zoom to map
-        gameState.zoom = 5; // Initial zoom
+        gameState.zoom = 5;
         gameState.panX = width / 2;
         gameState.panY = height / 2;
 
@@ -157,7 +148,7 @@ async function init() {
 
     } catch (e) {
         console.error("Failed to load map:", e);
-        document.querySelector('.loading-text').innerText = "Error loading map data. Please reload.";
+        document.querySelector('.loading-text').innerText = "Error: Open this site on a server (GitHub Pages/Vercel) to see the map.";
     }
 }
 
@@ -169,7 +160,7 @@ function resize() {
 // Game Loop
 function startGameLoop() {
     requestAnimationFrame(render);
-    setInterval(gameTick, 1000); // 1 sec = 1 day (adjustable)
+    setInterval(gameTick, 1000);
 }
 
 function gameTick() {
@@ -181,24 +172,19 @@ function gameTick() {
 
     // Logic for all countries
     gameState.countries.forEach(c => {
-        // Income
-        c.money += (c.gdp / 365) * 0.1; // Tax rate
+        c.money += (c.gdp / 365) * 0.1;
         c.manpower = Math.min(c.manpower + (c.population / 365) * 0.5, c.population * 20);
 
-        // AI Logic
         if (c.id !== gameState.playerCountryId) {
             runAI(c);
         }
     });
 
-    // Update UI for Player
     const player = getCountry(gameState.playerCountryId);
     if (player) {
         gameState.money = player.money;
         gameState.manpower = player.manpower;
         updateStatsUI();
-
-        // If panel open, update panel
         if (gameState.selectedCountryId) {
             updatePanel(getCountry(gameState.selectedCountryId));
         }
@@ -206,26 +192,20 @@ function gameTick() {
 }
 
 function runAI(country) {
-    // 5% chance per day to do a diplomatic action
     if (Math.random() > 0.05) return;
 
-    // Simple AI:
-    // 1. Pick random target
     const target = gameState.countries[Math.floor(Math.random() * gameState.countries.length)];
     if (target.id === country.id) return;
 
-    // 2. Decide action based on relation
     const relation = getRelation(country, target.id);
 
     if (relation < RELATION_THRESHOLD_WAR) {
-        // Declare War check
         if (!country.isAtWar.includes(target.id) && country.military > target.military * 1.2) {
             declareWar(country, target);
         }
     } else if (relation > 20) {
-        improveRelations(country, target, 1); // Passively improve
+        improveRelations(country, target, 1);
     } else {
-        // Random drift
         changeRelation(country, target.id, (Math.random() - 0.5) * 2);
     }
 }
@@ -238,13 +218,15 @@ function getRelation(c1, c2Id) {
 function changeRelation(c1, c2Id, amount) {
     const old = c1.relations[c2Id] || 0;
     c1.relations[c2Id] = Math.max(-100, Math.min(100, old + amount));
-
-    // Mirror relationship (simplified)
     const c2 = getCountry(c2Id);
     if (c2) {
         const old2 = c2.relations[c1.id] || 0;
         c2.relations[c1.id] = Math.max(-100, Math.min(100, old2 + amount));
     }
+}
+
+function improveRelations(c1, c2, amount) {
+    changeRelation(c1, c2.id, amount);
 }
 
 function actionImproveRelations() {
@@ -272,12 +254,10 @@ function declareWar(attacker, defender) {
 
     attacker.isAtWar.push(defender.id);
     defender.isAtWar.push(attacker.id);
-
     changeRelation(attacker, defender.id, -100);
 
     if (attacker.id === gameState.playerCountryId || defender.id === gameState.playerCountryId) {
         showNotification(`${attacker.name} has declared WAR on ${defender.name}!`);
-        // Visual effect: flash red?
     }
 }
 
@@ -290,8 +270,6 @@ function actionAlliance() {
         showNotification(`${target.name} refuses (Relations too low).`);
         return;
     }
-
-    // Success
     player.isAllied.push(target.id);
     target.isAllied.push(player.id);
     showNotification(`Alliance formed with ${target.name}!`);
@@ -337,16 +315,14 @@ function updatePanel(c) {
     document.getElementById('panel-pop').innerText = `${Math.floor(c.population)} M`;
     document.getElementById('panel-mil').innerText = Math.floor(c.military);
 
-    // Relations
     const player = getCountry(gameState.playerCountryId);
     let rel = 0;
     if (player && c.id !== player.id) {
         rel = getRelation(player, c.id);
     }
     const bar = document.getElementById('relations-bar');
-    bar.style.width = `${(rel + 100) / 2}%`; // -100..100 -> 0..100
+    bar.style.width = `${(rel + 100) / 2}%`;
 
-    // Dynamic text
     let status = "Neutral";
     if (rel > 50) status = "Friendly";
     if (rel > 80) status = "Ally";
@@ -356,15 +332,14 @@ function updatePanel(c) {
 
     document.getElementById('relations-val').innerText = `${status} (${Math.floor(rel)})`;
 
-    // Analysis
     const analysis = document.getElementById('panel-analysis');
     if (c.id === player.id) {
-        analysis.innerText = "Your nation. Manage it wisely.";
+        analysis.innerText = "Your nation.";
     } else if (player.isAtWar.includes(c.id)) {
-        analysis.innerText = "Active Combatant. Recommend immediate military action.";
+        analysis.innerText = "Active Combatant.";
         analysis.style.color = '#f87171';
     } else {
-        analysis.innerText = c.gdp > player.gdp ? "Economic Superior. Avoid conflict." : "Economic Inferior. Potential expansion target.";
+        analysis.innerText = c.gdp > player.gdp ? "Strategic Threat." : "Expansion Opportunity.";
         analysis.style.color = '#94a3b8';
     }
 }
@@ -376,25 +351,19 @@ function closePanel() {
 
 // Rendering
 function render() {
-    // Clear
-    ctx.fillStyle = '#0f172a'; // Deep Sea
+    ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, width, height);
 
     ctx.save();
-    // Transform
     ctx.translate(gameState.panX, gameState.panY);
     ctx.scale(gameState.zoom, gameState.zoom);
 
-    // Draw Countries
     gameState.countries.forEach(c => {
         ctx.beginPath();
         c.paths.forEach(poly => {
-            // Projection: Coordinates are roughly Longitude (-180 to 180), Latitude (-90 to 90)
-            // Scaling up for visibility
             const SCALE = 3;
             if (poly.length > 0) {
-                // Move to first
-                ctx.moveTo(poly[0][0] * SCALE + width / 2, -poly[0][1] * SCALE + height / 2); // Y flip
+                ctx.moveTo(poly[0][0] * SCALE + width / 2, -poly[0][1] * SCALE + height / 2);
                 for (let i = 1; i < poly.length; i++) {
                     ctx.lineTo(poly[i][0] * SCALE + width / 2, -poly[i][1] * SCALE + height / 2);
                 }
@@ -402,32 +371,29 @@ function render() {
         });
         ctx.closePath();
 
-        // Styling
         const player = getCountry(gameState.playerCountryId);
         const isSelected = gameState.selectedCountryId === c.id;
         const isHovered = gameState.hoveredCountryId === c.id;
         const isPlayer = c.id === gameState.playerCountryId;
 
+        ctx.fillStyle = '#334155';
+        if (c.color) ctx.fillStyle = c.color;
+
         if (isPlayer) {
-            ctx.fillStyle = '#3b82f6'; // Player Blue
+            ctx.fillStyle = '#3b82f6';
         } else if (player && player.isAtWar.includes(c.id)) {
-            ctx.fillStyle = '#ef4444'; // Enemy Red
+            ctx.fillStyle = '#ef4444';
         } else if (player && player.isAllied.includes(c.id)) {
-            ctx.fillStyle = '#10b981'; // Ally Green
-        } else {
-            ctx.fillStyle = '#334155'; // Neutral Slate
+            ctx.fillStyle = '#10b981';
         }
 
-        if (isSelected) ctx.fillStyle = '#eab308'; // Selection Yellow
-        if (isHovered && !isSelected) ctx.fillStyle = '#475569'; // Hover Lighter Slate
+        if (isSelected) ctx.fillStyle = '#eab308';
+        if (isHovered && !isSelected) ctx.fillStyle = '#64748b';
 
         ctx.fill();
         ctx.lineWidth = 0.5 / gameState.zoom;
         ctx.strokeStyle = '#000';
         ctx.stroke();
-
-        // Store screen path for hit detection (approximate for now)
-        // Optimization: In real engine, we'd use a quadtree or color buffer picking
     });
 
     ctx.restore();
@@ -440,49 +406,22 @@ function onMouseDown(e) {
     gameState.lastMouseX = e.clientX;
     gameState.lastMouseY = e.clientY;
 
-    // hit detection logic (Reverse Projection)
-    // Coords: (Mouse - Pan) / Zoom
-    const recX = (e.clientX - gameState.panX);
-    const recY = (e.clientY - gameState.panY);
-
-    // Re-check detection... this is hard with raw paths in canvas without re-iterating
-    // Brute force check centroids closest?
-    let bestDist = 1000;
-    let bestC = null;
-
-    const SCALE = 3;
+    // Hit Detection (Approximate)
     const clickX = (e.clientX - gameState.panX) / gameState.zoom - width / 2;
-    const clickY = -((e.clientY - gameState.panY) / gameState.zoom - height / 2); // Y flip back
+    const clickY = -((e.clientY - gameState.panY) / gameState.zoom - height / 2);
 
-    // Simple centroid check
+    let bestDist = 200;
+    let bestC = null;
+    const SCALE = 3;
+
     gameState.countries.forEach(c => {
-        // Warning: c.center is NOT pre-calculated with SCALE.
-        // And c.center is derived from raw geojson [-180, 180]
         const cx = c.center.x * SCALE;
         const cy = c.center.y * SCALE;
+        const dist = Math.sqrt((cx - clickX) ** 2 + (cy - clickY) ** 2);
 
-        const dist = Math.sqrt((cx - clickX / SCALE * SCALE) ** 2 + (cy - clickY / SCALE * SCALE) ** 2);
-        // Correct math is hard here without library. Let's assume centroid proximity for selection
-        // Scaling mismatch potential.
-
-        // Revised simplified hit: 
-        // 1. Convert screen mouse to Map Coords.
-        // 2. Iterate all countries, check distance to center.
-
-        // This is a naive implementation but works for clicking "near" a country
-        // Improving distance formulation:
-        const dcx = c.center.x * SCALE;
-        const dcy = c.center.y * SCALE; // Note Y flip handle
-
-        const dx = dcx - clickX;
-        const dy = dcy - clickY; // Both in map units
-        const d = Math.sqrt(dx * dx + dy * dy);
-
-        if (d < 10) { // Threshold
-            if (d < bestDist) {
-                bestDist = d;
-                bestC = c;
-            }
+        if (dist < bestDist) {
+            bestDist = dist;
+            bestC = c;
         }
     });
 
@@ -490,9 +429,6 @@ function onMouseDown(e) {
         gameState.selectedCountryId = bestC.id;
         document.getElementById('country-panel').classList.add('open');
         updatePanel(bestC);
-    } else {
-        // If drag moves minimal amount, it's a click on sea
-        // but we handle drag in mousemove
     }
 }
 
@@ -514,7 +450,7 @@ function onScroll(e) {
     const zoomSpeed = 0.1;
     const delta = -Math.sign(e.deltaY);
     const newZoom = gameState.zoom * (1 + delta * zoomSpeed);
-    gameState.zoom = Math.min(Math.max(newZoom, 0.5), 50); // Clamp
+    gameState.zoom = Math.min(Math.max(newZoom, 0.5), 50);
 }
 
 // Saving / Loading
@@ -526,10 +462,10 @@ window.saveGame = function () {
         money: gameState.money
     };
     try {
-        localStorage.setItem('dummynation_save', JSON.stringify(data)); // Cyclic object error potential? No, Country is simple obj
+        localStorage.setItem('dummynation_save', JSON.stringify(data));
         showNotification("Game Saved Successfully.");
     } catch (e) {
-        showNotification("Error saving game (Storage Full?)");
+        showNotification("Error saving game.");
     }
 }
 
@@ -541,21 +477,20 @@ window.loadGame = function () {
     }
     try {
         const data = JSON.parse(json);
-        // We need to re-instantiate classes or merge data
-        // For simplicity, we just reload logic, but GeoJSON map needs to be there.
-        // Merging properties:
-        data.countries.forEach(savedC => {
-            const liveC = gameState.countries.find(c => c.id === savedC.id);
-            if (liveC) {
-                Object.assign(liveC, savedC);
-            }
-        });
         gameState.playerCountryId = data.player;
         gameState.money = data.money;
         gameState.date = new Date(data.date);
+
+        data.countries.forEach(savedC => {
+            const liveC = gameState.countries.find(c => c.id === savedC.id);
+            if (liveC) {
+                liveC.money = savedC.money;
+                liveC.relations = savedC.relations;
+                liveC.isAtWar = savedC.isAtWar;
+            }
+        });
         showNotification("Game Loaded.");
     } catch (e) {
-        console.error(e);
         showNotification("Save file corrupted.");
     }
 }
@@ -567,5 +502,4 @@ window.setMode = function (mode) {
     showNotification("Mode switched: " + mode.charAt(0).toUpperCase() + mode.slice(1));
 }
 
-// Helper: setMode exposed
 init();
