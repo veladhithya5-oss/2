@@ -52,26 +52,27 @@
             left: 0;
             right: 0;
             height: 60px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.85);
             display: flex;
             align-items: center;
             padding: 0 20px;
             justify-content: space-between;
             pointer-events: auto;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
         .resource {
             display: flex;
             align-items: center;
-            margin-right: 20px;
-            font-size: 18px;
-            font-weight: bold;
+            margin-right: 25px;
+            font-size: 16px;
+            font-weight: 600;
         }
 
         .resource-icon {
             margin-right: 8px;
-            font-size: 20px;
+            font-size: 18px;
         }
 
         .liquidity {
@@ -86,41 +87,48 @@
             color: #60a5fa;
         }
 
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         /* Bottom Bar */
         .bottom-bar {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            height: 80px;
-            background: rgba(0, 0, 0, 0.8);
+            height: 90px;
+            background: rgba(0, 0, 0, 0.9);
             display: flex;
             align-items: center;
             justify-content: center;
             pointer-events: auto;
-            gap: 15px;
+            gap: 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .action-btn {
-            background: #333;
-            border: 1px solid #555;
+            background: #1e293b;
+            border: 1px solid #334155;
             color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
             transition: all 0.2s;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 80px;
+            min-width: 90px;
+            font-size: 13px;
         }
 
         .action-btn:hover {
-            background: #444;
-            border-color: #777;
-            transform: translateY(-2px);
+            background: #334155;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
 
         .action-btn.active {
@@ -128,25 +136,52 @@
             border-color: #60a5fa;
         }
 
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .action-btn i {
-            font-size: 20px;
-            margin-bottom: 4px;
+            font-size: 22px;
+            margin-bottom: 6px;
+        }
+
+        /* Menu Button */
+        .menu-btn {
+            background: transparent;
+            border: 1px solid #555;
+            color: #ddd;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: #888;
         }
 
         /* Side Panel */
         .side-panel {
             position: absolute;
-            right: 0;
-            top: 60px;
-            bottom: 80px;
-            width: 300px;
-            background: rgba(0, 0, 0, 0.6);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            right: 20px;
+            top: 80px;
+            bottom: 110px;
+            width: 320px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 20px;
-            transform: translateX(100%);
-            transition: transform 0.3s;
+            border-radius: 12px;
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: auto;
             overflow-y: auto;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
         }
 
         .side-panel.open {
@@ -154,29 +189,135 @@
         }
 
         .panel-header {
-            font-size: 20px;
-            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
-            border-bottom: 1px solid #444;
+            border-bottom: 1px solid #334155;
             padding-bottom: 10px;
         }
 
-        .panel-content {
-            font-size: 14px;
-            line-height: 1.5;
+        .panel-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: white;
         }
 
-        /* Country Label */
-        .country-label {
-            position: absolute;
-            pointer-events: none;
-            color: rgba(255, 255, 255, 0.8);
+        .close-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .close-btn:hover {
+            color: white;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 15px;
             font-weight: bold;
-            text-shadow: 0 0 4px black;
-            transform: translate(-50%, -50%);
-            white-space: nowrap;
-            font-size: 14px;
-            opacity: 0.9;
+            margin-top: 2px;
+        }
+
+        /* Relations Bar */
+        .relations-container {
+            margin-bottom: 20px;
+        }
+
+        .relations-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #cbd5e1;
+        }
+
+        .progress-bg {
+            height: 8px;
+            background: #334155;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #eab308, #22c55e);
+            width: 50%;
+            transition: width 0.3s;
+        }
+
+        /* Action Buttons specific to Panel */
+        .panel-actions {
+            display: grid;
+            gap: 10px;
+        }
+
+        .panel-btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-war {
+            background: #7f1d1d;
+            color: #fca5a5;
+            border: 1px solid #991b1b;
+        }
+
+        .btn-war:hover {
+            background: #991b1b;
+        }
+
+        .btn-alliance {
+            background: #14532d;
+            color: #86efac;
+            border: 1px solid #166534;
+        }
+
+        .btn-alliance:hover {
+            background: #166534;
+        }
+
+        .btn-trade {
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+        }
+
+        .btn-trade:hover {
+            background: #1e293b;
+            border-color: #64748b;
         }
 
         /* Loading Screen */
@@ -186,20 +327,21 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: #000;
+            background: #0f172a;
             z-index: 9999;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            pointer-events: auto;
         }
 
         .loader {
-            border: 4px solid #333;
-            border-top: 4px solid #2563eb;
+            border: 4px solid #1e293b;
+            border-top: 4px solid #3b82f6;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
@@ -213,13 +355,56 @@
                 transform: rotate(360deg);
             }
         }
+
+        .loading-text {
+            font-size: 18px;
+            font-weight: 300;
+            color: #94a3b8;
+            letter-spacing: 1px;
+        }
+
+        /* Notifications */
+        #notifications {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .notif {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+            font-size: 13px;
+            animation: slideIn 0.3s ease-out;
+            pointer-events: auto;
+            opacity: 0.9;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 0.9;
+            }
+        }
     </style>
 </head>
 
 <body>
     <div id="loading-screen">
         <div class="loader"></div>
-        <h2>Initializing World Map...</h2>
+        <div class="loading-text">Generating Global Geopolitics...</div>
     </div>
 
     <div id="game-container">
@@ -228,35 +413,90 @@
         <div class="ui-layer">
             <div class="top-bar">
                 <div style="display:flex;">
-                    <div class="resource liquidity"><span class="resource-icon">💰</span><span
-                            id="res-money">100.0M</span></div>
-                    <div class="resource manpower"><span class="resource-icon">👥</span><span
-                            id="res-manpower">50.0K</span></div>
-                    <div class="resource research"><span class="resource-icon">🔬</span><span
-                            id="res-research">10.0</span></div>
+                    <div class="resource liquidity" title="Money available for actions"><span
+                            class="resource-icon">💰</span><span id="res-money">0 M</span></div>
+                    <div class="resource manpower" title="Available soldiers"><span class="resource-icon">👥</span><span
+                            id="res-manpower">0 K</span></div>
+                    <div class="resource research" title="Technology Level"><span class="resource-icon">🔬</span><span
+                            id="res-research">1.0</span></div>
                 </div>
-                <div id="date-display">Jan 2024</div>
+                <div class="control-group">
+                    <span id="date-display"
+                        style="font-weight:600; font-variant-numeric: tabular-nums; width:100px; text-align:center;">Jan
+                        2024</span>
+                    <button class="menu-btn" onclick="saveGame()">💾 Save</button>
+                    <button class="menu-btn" onclick="loadGame()">📂 Load</button>
+                    <button class="menu-btn" onclick="togglePause()" id="pause-btn">⏸️</button>
+                </div>
             </div>
 
             <div class="side-panel" id="country-panel">
-                <div class="panel-header" id="panel-title">Country Name</div>
-                <div class="panel-content" id="panel-stats">
-                    Select a country to view details.
+                <div class="panel-header">
+                    <div class="panel-title" id="panel-title">Country Name</div>
+                    <button class="close-btn" onclick="closePanel()">×</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">GDP</div>
+                        <div class="stat-value" id="panel-gdp">$0 B</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Population</div>
+                        <div class="stat-value" id="panel-pop">0 M</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Military Power</div>
+                        <div class="stat-value" id="panel-mil">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Ideology</div>
+                        <div class="stat-value" id="panel-ideology">Democracy</div>
+                    </div>
+                </div>
+
+                <div class="relations-container">
+                    <div class="relations-label">
+                        <span>Relations</span>
+                        <span id="relations-val">Neutral (0)</span>
+                    </div>
+                    <div class="progress-bg">
+                        <div class="progress-fill" id="relations-bar" style="width: 50%;"></div>
+                    </div>
+                </div>
+
+                <div class="panel-actions">
+                    <button class="panel-btn btn-trade" onclick="actionImproveRelations()">
+                        <i>🤝</i> Improve Relations ($5M)
+                    </button>
+                    <button class="panel-btn btn-alliance" onclick="actionAlliance()">
+                        <i>🛡️</i> Form Alliance
+                    </button>
+                    <button class="panel-btn btn-war" onclick="actionDeclareWar()">
+                        <i>⚔️</i> Declare War
+                    </button>
+                </div>
+
+                <div style="margin-top: 20px; font-size: 12px; color: #64748b; line-height: 1.4;">
+                    <strong style="color: #94a3b8;">Strategic Analysis:</strong><br>
+                    <span id="panel-analysis">No data available.</span>
                 </div>
             </div>
 
+            <div id="notifications"></div>
+
             <div class="bottom-bar">
-                <button class="action-btn active" id="btn-diplomacy" onclick="setMode('diplomacy')">
-                    <i>🤝</i> Diplomacy
+                <button class="action-btn active" id="mode-diplomacy" onclick="setMode('diplomacy')">
+                    <i>🌐</i> Diplomacy
                 </button>
-                <button class="action-btn" id="btn-military" onclick="setMode('military')">
-                    <i>⚔️</i> Military
+                <button class="action-btn" id="mode-military" onclick="setMode('military')">
+                    <i>🎯</i> Conquest
                 </button>
-                <button class="action-btn" id="btn-economy" onclick="setMode('economy')">
+                <button class="action-btn" id="mode-economy" onclick="setMode('economy')">
                     <i>📈</i> Economy
                 </button>
-                <button class="action-btn" id="btn-research" onclick="setMode('research')">
-                    <i>🧪</i> Research
+                <button class="action-btn" id="mode-research" onclick="setMode('research')">
+                    <i>🚀</i> Tech Tree
                 </button>
             </div>
         </div>
