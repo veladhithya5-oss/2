@@ -10,17 +10,17 @@ function renderLoop() {
 }
 
 function renderMap() {
-    ctx.fillStyle = '#0a0e1a';
+    ctx.fillStyle = '#05070a'; // Darker ocean
     ctx.fillRect(0, 0, W, H);
 
-    // Ocean grid subtle
     ctx.save();
     ctx.translate(G.panX, G.panY);
     ctx.scale(G.zoom, G.zoom);
 
     const ox = W / 2, oy = H / 2;
+    const p = playerC();
 
-    // Draw countries
+    // 1. Draw Countries
     G.countries.forEach(c => {
         ctx.beginPath();
         c.paths.forEach(poly => {
@@ -33,48 +33,33 @@ function renderMap() {
             }
         });
 
-        const p = playerC();
         const isSelected = G.selectedId === c.id;
         const isHovered = G.hoveredId === c.id && !isSelected;
-        const isPlayer = c.isPlayer;
-
-        // Base color
-        let fill = c.color;
+        const isPlayer = c.id === G.player;
 
         // Map mode coloring
+        let fill = c.color;
         if (G.mapMode === 'population') {
-            const maxPop = 1428;
-            const ratio = Math.min(1, c.population / maxPop);
-            fill = `hsl(210, 70%, ${Math.max(10, 90 - ratio * 80)}%)`; // Blue scale
+            const ratio = Math.min(1, c.population / 1428);
+            fill = `hsl(210, 70%, ${Math.max(15, 80 - ratio * 60)}%)`;
         } else if (G.mapMode === 'military') {
             const ratio = Math.min(1, c.armyStrength / 100);
-            fill = `hsl(0, 70%, ${Math.max(10, 90 - ratio * 80)}%)`; // Red scale
+            fill = `hsl(0, 70%, ${Math.max(15, 80 - ratio * 60)}%)`;
         } else if (G.mapMode === 'economy') {
             const ratio = Math.min(1, c.gdp / 20000);
-            fill = `hsl(140, 70%, ${Math.max(10, 90 - ratio * 80)}%)`; // Green scale
-        } else if (G.mapMode === 'diplomacy') {
+            fill = `hsl(140, 70%, ${Math.max(15, 80 - ratio * 60)}%)`;
+        } else if (G.mapMode === 'diplomacy' || G.mapMode === 'relations') {
             if (p) {
                 if (c.id === p.id) fill = '#3b82f6';
                 else if (p.atWar.includes(c.id)) fill = '#ef4444';
                 else if (p.allies.includes(c.id)) fill = '#10b981';
-                else if (p.pacts.includes(c.id)) fill = '#8b5cf6';
-                else fill = '#334155'; // Neutral
-            } else {
-                fill = '#334155';
-            }
-        } else if (G.mapMode === 'stability') {
-            const ratio = Math.min(1, c.stability / 100);
-            fill = `hsl(10, 80%, ${Math.max(10, 20 + ratio * 60)}%)`; // Red-Yellow-Green scale roughly
-        } else if (G.mapMode === 'relations') {
-            if (p) {
-                const rel = getRelation(p, c.id);
-                const ratio = (rel + 100) / 200; // 0..1
-                fill = `hsl(${ratio * 120}, 70%, 45%)`; // Red (hostile) to Green (friendly)
-            } else {
-                fill = '#334155';
-            }
+                else {
+                    const rel = getRelation(p, c.id);
+                    const r = (rel + 100) / 200;
+                    fill = `hsl(${r * 120}, 40%, 35%)`;
+                }
+            } else fill = '#334155';
         } else {
-            // Political mode
             if (p && !isPlayer) {
                 if (p.atWar.includes(c.id)) fill = blendColor(c.color, '#ef4444', 0.6);
                 else if (p.allies.includes(c.id)) fill = blendColor(c.color, '#10b981', 0.4);
@@ -82,157 +67,92 @@ function renderMap() {
         }
 
         ctx.fillStyle = fill;
-        if (isHovered) { ctx.fillStyle = lightenColor(fill, 20); }
-        if (isSelected) { ctx.fillStyle = '#facc15'; }
+        if (isHovered) {
+            ctx.fillStyle = lightenColor(fill, 20);
+            ctx.shadowColor = 'rgba(255,255,255,0.3)';
+            ctx.shadowBlur = 15 / G.zoom;
+        }
+        if (isSelected) {
+            ctx.fillStyle = '#facc15';
+            ctx.shadowColor = 'rgba(250,204,21,0.5)';
+            ctx.shadowBlur = 25 / G.zoom;
+        }
 
         ctx.fill();
+        ctx.shadowBlur = 0;
 
-        // Border - thinner for "quality" look, highlight selected
-        ctx.lineWidth = isSelected ? 2 / G.zoom : (isHovered ? 1 / G.zoom : 0.4 / G.zoom);
-        ctx.strokeStyle = isSelected ? '#fff' : (isHovered ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.15)');
+        // Borders
+        ctx.lineWidth = isSelected ? 2.5 / G.zoom : (isHovered ? 1.5 / G.zoom : 0.6 / G.zoom);
+        ctx.strokeStyle = isSelected ? '#fff' : (isHovered ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.15)');
         ctx.stroke();
     });
 
-    // ================== ARMY UNITS ON MAP ==================
-    const p = playerC();
-    const pulse = (Math.sin(Date.now() / 300) + 1) / 2; // 0..1 pulsing
-
+    // 2. Army Units
     G.countries.forEach(c => {
-        const x = c.center.x * SCALE + ox;
-        const y = -c.center.y * SCALE + oy;
         const army = Math.floor(c.armyStrength);
         if (army <= 0) return;
 
-        // Determine icon based on army size
-        let icon = '🪖';      // small army = helmet
-        if (army >= 80) icon = '🚀';  // massive = rocket
-        else if (army >= 50) icon = '☢️';  // nuclear tier
-        else if (army >= 30) icon = '🛡️';  // strong = tank
-        else if (army >= 15) icon = '⚔️';  // medium
+        const x = c.center.x * SCALE + ox;
+        const y = -c.center.y * SCALE + oy;
 
-        // How many unit icons to show (1-3)
-        let unitCount = 1;
-        if (army >= 40) unitCount = 3;
-        else if (army >= 20) unitCount = 2;
+        ctx.save();
+        ctx.translate(x, y);
 
-        const iconSize = Math.max(4, 10 / G.zoom);
-        ctx.font = `${iconSize}px Inter`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        // Draw army banner background
-        const bannerW = (unitCount * iconSize * 0.8 + 20) / G.zoom;
-        const bannerH = (iconSize + 10) / G.zoom;
-        const bannerY = y + 6 / G.zoom;
-
-        // Banner color based on relationship
-        let bannerColor = 'rgba(30, 41, 59, 0.75)';
-        let borderColor = 'rgba(100, 116, 139, 0.5)';
-        let textColor = '#cbd5e1';
-
-        if (c.isPlayer || c.isHumanPlayer) {
-            bannerColor = 'rgba(59, 130, 246, 0.35)';
-            borderColor = `rgba(96, 165, 250, ${0.5 + pulse * 0.5})`;
-            textColor = '#93c5fd';
-        } else if (p && p.atWar.includes(c.id)) {
-            bannerColor = `rgba(239, 68, 68, ${0.25 + pulse * 0.15})`;
-            borderColor = `rgba(248, 113, 113, ${0.5 + pulse * 0.5})`;
-            textColor = '#fca5a5';
-        } else if (p && p.allies.includes(c.id)) {
-            bannerColor = 'rgba(16, 185, 129, 0.25)';
-            borderColor = 'rgba(52, 211, 153, 0.5)';
-            textColor = '#6ee7b7';
-        }
-
-        // Draw rounded banner
-        const bx = x - bannerW / 2;
-        const by = bannerY - bannerH / 2;
-        const r = 3 / G.zoom;
+        // Tactical Circle
         ctx.beginPath();
-        ctx.moveTo(bx + r, by);
-        ctx.lineTo(bx + bannerW - r, by);
-        ctx.quadraticCurveTo(bx + bannerW, by, bx + bannerW, by + r);
-        ctx.lineTo(bx + bannerW, by + bannerH - r);
-        ctx.quadraticCurveTo(bx + bannerW, by + bannerH, bx + bannerW - r, by + bannerH);
-        ctx.lineTo(bx + r, by + bannerH);
-        ctx.quadraticCurveTo(bx, by + bannerH, bx, by + bannerH - r);
-        ctx.lineTo(bx, by + r);
-        ctx.quadraticCurveTo(bx, by, bx + r, by);
-        ctx.closePath();
-        ctx.fillStyle = bannerColor;
+        ctx.arc(0, 0, 8 / G.zoom, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
         ctx.fill();
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 0.8 / G.zoom;
+        ctx.strokeStyle = c.color;
+        ctx.lineWidth = 2 / G.zoom;
         ctx.stroke();
 
-        // Draw unit icons
-        const startX = x - ((unitCount - 1) * iconSize * 0.35);
-        for (let i = 0; i < unitCount; i++) {
-            ctx.fillText(icon, startX + i * iconSize * 0.7, bannerY);
-        }
-
-        // Draw army count number
-        const numSize = Math.max(3, 6 / G.zoom);
-        ctx.font = `bold ${numSize}px Inter, sans-serif`;
-        ctx.fillStyle = textColor;
-        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-        ctx.lineWidth = 0.6 / G.zoom;
-        ctx.strokeText(army + '', x, bannerY + bannerH / 2 + numSize * 0.6);
-        ctx.fillText(army + '', x, bannerY + bannerH / 2 + numSize * 0.6);
-    });
-
-    // Country name labels (at sufficient zoom)
-    if (G.zoom > 2) {
+        ctx.font = `bold ${9 / G.zoom}px Inter`;
+        ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const fontSize = Math.max(3, 8 / G.zoom);
-        ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+        ctx.fillText(army, 0, 0);
+        ctx.restore();
+    });
 
+    // 3. Country Names
+    if (G.zoom > 1.8) {
         G.countries.forEach(c => {
-            const x = c.center.x * SCALE + ox;
-            const y = -c.center.y * SCALE + oy;
-            ctx.fillStyle = 'rgba(255,255,255,0.85)';
-            ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-            ctx.lineWidth = 0.5 / G.zoom;
-            ctx.strokeText(c.name, x, y - 8 / G.zoom);
-            ctx.fillText(c.name, x, y - 8 / G.zoom);
+            const x = c.center.x * SCALE + ox, y = -c.center.y * SCALE + oy;
+            ctx.font = `bold ${8 / G.zoom}px Inter`;
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+            ctx.lineWidth = 2 / G.zoom;
+            ctx.strokeText(c.name.toUpperCase(), x, y - 12 / G.zoom);
+            ctx.fillText(c.name.toUpperCase(), x, y - 12 / G.zoom);
         });
     }
 
-    // War frontline indicators
+    // 4. War Lines
     G.wars.forEach(war => {
-        const atk = getC(war.attacker);
-        const def = getC(war.defender);
+        const atk = getC(war.attacker), def = getC(war.defender);
         if (!atk || !def) return;
+        const ax = atk.center.x * SCALE + ox, ay = -atk.center.y * SCALE + oy;
+        const dx = def.center.x * SCALE + ox, dy = -def.center.y * SCALE + oy;
 
-        const ax = atk.center.x * SCALE + ox;
-        const ay = -atk.center.y * SCALE + oy;
-        const dx = def.center.x * SCALE + ox;
-        const dy = -def.center.y * SCALE + oy;
-
-        // Animated dashed line between warring nations
-        const t = (Date.now() % 2000) / 2000;
         ctx.beginPath();
+        ctx.setLineDash([5 / G.zoom, 5 / G.zoom]);
+        ctx.lineDashOffset = -(Date.now() % 2000) / 100;
         ctx.moveTo(ax, ay);
         ctx.lineTo(dx, dy);
-        ctx.setLineDash([4 / G.zoom, 4 / G.zoom]);
-        ctx.lineDashOffset = -t * 20;
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-        ctx.lineWidth = 1.5 / G.zoom;
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
+        ctx.lineWidth = 2 / G.zoom;
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Small explosion icon at midpoint
-        const mx = (ax + dx) / 2, my = (ay + dy) / 2;
-        const eSize = 5 / G.zoom;
-        ctx.font = `${eSize}px Inter`;
-        ctx.fillStyle = '#ef4444';
-        ctx.fillText('💥', mx - eSize / 2, my);
+        ctx.font = `${12 / G.zoom}px Inter`;
+        ctx.fillText('💥', (ax + dx) / 2, (ay + dy) / 2);
     });
 
     ctx.restore();
 
-    // Tooltip
+    // 5. Tooltip
     if (G.hoveredId && !G.isDragging) {
         const c = getC(G.hoveredId);
         if (c) drawTooltip(c);
@@ -331,50 +251,54 @@ function openCountryPanel(c) {
     const warData = G.wars.find(w => (w.attacker === c.id && w.defender === G.player) || (w.attacker === G.player && w.defender === c.id));
 
     let html = `
-        <div class="stats-grid">
-            <div class="stat-card"><div class="stat-label">GDP</div><div class="stat-value" style="color:#4ade80;">$${Math.floor(c.gdp)}B</div></div>
-            <div class="stat-card"><div class="stat-label">Population</div><div class="stat-value">${Math.floor(c.population)}M</div></div>
-            <div class="stat-card"><div class="stat-label">Army</div><div class="stat-value" style="color:#f87171;">${Math.floor(c.armyStrength)}</div></div>
-            <div class="stat-card"><div class="stat-label">Stability</div><div class="stat-value" style="color:${c.stability > 50 ? '#4ade80' : '#f87171'};">${Math.floor(c.stability)}%</div></div>
-            <div class="stat-card"><div class="stat-label">Treasury</div><div class="stat-value" style="color:#4ade80;">${formatMoney(c.treasury)}</div></div>
-            <div class="stat-card"><div class="stat-label">Tech Level</div><div class="stat-value" style="color:#a78bfa;">${c.techLevel.toFixed(1)}</div></div>
+        <div class="dn-panel-grid">
+            <div class="dn-stat-box"><div class="dn-stat-label">GDP</div><div class="dn-stat-value green">$${Math.floor(c.gdp)}B</div></div>
+            <div class="dn-stat-box"><div class="dn-stat-label">Population</div><div class="dn-stat-value">${Math.floor(c.population)}M</div></div>
+            <div class="dn-stat-box"><div class="dn-stat-label">Army</div><div class="dn-stat-value red">${Math.floor(c.armyStrength)}</div></div>
+            <div class="dn-stat-box"><div class="dn-stat-label">Stability</div><div class="dn-stat-value ${c.stability > 50 ? 'green' : 'red'}">${Math.floor(c.stability)}%</div></div>
+            <div class="dn-stat-box"><div class="dn-stat-label">Treasury</div><div class="dn-stat-value green">${formatMoney(c.treasury)}</div></div>
+            <div class="dn-stat-box"><div class="dn-stat-label">Tech Level</div><div class="dn-stat-value blue">${c.techLevel.toFixed(1)}</div></div>
         </div>`;
 
     if (!isPlayer) {
         html += `
-        <div class="section-title">Relations</div>
-        <div class="relations-bar-wrap">
-            <div class="relations-labels"><span>${status}</span><span>${rel}</span></div>
-            <div class="progress-track"><div class="progress-fill" style="width:${relPct}%"></div></div>
+        <div class="dn-relation-section">
+            <div class="dn-relation-header">
+                <span>RELATIONS: ${status.toUpperCase()}</span>
+                <span>${rel}</span>
+            </div>
+            <div class="dn-relation-bar-bg">
+                <div class="dn-relation-bar-fill" style="width:${relPct}%"></div>
+            </div>
         </div>`;
 
         if (warData) {
             const isAttacker = warData.attacker === G.player;
             html += `
-            <div class="section-title">War Progress</div>
+            <div class="section-title">WAR PROGRESS</div>
             <div class="war-progress-card">
                 <div class="war-prog-header">
-                    <span class="war-prog-title">${isAttacker ? 'Our Offensive' : 'Their Offensive'}</span>
+                    <span class="war-prog-title">${isAttacker ? 'OUR OFFENSIVE' : 'ENEMY OFFENSIVE'}</span>
                     <span class="war-prog-pct">${Math.floor(isAttacker ? warData.progress : 100 - warData.progress)}%</span>
                 </div>
                 <div class="war-prog-bar"><div class="war-prog-fill" style="width:${isAttacker ? warData.progress : 100 - warData.progress}%"></div></div>
             </div>`;
         }
 
-        html += `<div class="section-title">Actions</div><div style="display:flex;flex-direction:column;gap:6px;">`;
+        html += `<div class="dn-panel-actions">`;
 
         if (p && p.atWar.includes(c.id)) {
-            html += `<button class="panel-btn btn-trade" onclick="playerMakePeace('${c.id}')">🕊️ Offer Peace</button>`;
+            html += `<button class="dn-action-btn" onclick="playerMakePeace('${c.id}')">🕊️ PROPOSE PEACE</button>`;
         } else {
-            html += `<button class="panel-btn btn-trade" onclick="playerImproveRelations('${c.id}')">🤝 Improve Relations ($5B)</button>`;
+            html += `<button class="dn-action-btn" onclick="playerImproveRelations('${c.id}')">🤝 IMPROVE RELATIONS ($5B)</button>`;
             if (!p.allies.includes(c.id)) {
-                html += `<button class="panel-btn btn-alliance" onclick="playerFormAlliance('${c.id}')" ${rel < 50 ? 'disabled' : ''}>🛡️ Form Alliance (50+ rel)</button>`;
+                html += `<button class="dn-action-btn" onclick="playerFormAlliance('${c.id}')" ${rel < 50 ? 'disabled' : ''}>🛡️ FORM ALLIANCE (50+)</button>`;
             }
             if (!p.pacts.includes(c.id)) {
-                html += `<button class="panel-btn btn-pact" onclick="playerSignPact('${c.id}')" ${rel < 0 ? 'disabled' : ''}>📜 Non-Aggression Pact</button>`;
+                html += `<button class="dn-action-btn" onclick="playerSignPact('${c.id}')" ${rel < 0 ? 'disabled' : ''}>📜 NON-AGGRESSION PACT</button>`;
             }
             const canWar = rel <= 30 && !p.pacts.includes(c.id) && !p.allies.includes(c.id);
-            html += `<button class="panel-btn btn-war" onclick="playerDeclareWar('${c.id}')" ${!canWar ? 'disabled' : ''}>⚔️ Declare War</button>`;
+            html += `<button class="dn-action-btn war" onclick="playerDeclareWar('${c.id}')" ${!canWar ? 'disabled' : ''}>⚔️ DECLARE WAR</button>`;
         }
         html += `</div>`;
 
