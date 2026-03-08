@@ -303,6 +303,13 @@ window.playAsGuest = function () {
     enterGame();
 };
 
+window.playAsGoogle = function () {
+    // Basic mock placeholder for Gmail integration
+    // Replace this with real Google OAuth SDK implementation later
+    currentUser = 'Google User';
+    enterGame();
+};
+
 function enterGame() {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('start-page').style.display = 'none';

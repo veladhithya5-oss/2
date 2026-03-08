@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
-        content="Global Domination - A grand strategy game of world conquest, diplomacy, and empire management.">
-    <title>Global Domination — Conquer the World</title>
+        content="GLOBAL DOMINATION - A grand strategy game of world conquest, diplomacy, and empire management.">
+    <title>GLOBAL DOMINATION</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
@@ -173,10 +173,14 @@
                 <button class="auth-submit-btn" onclick="signUp()">Create Account →</button>
             </div>
 
-            <!-- Guest / Skip -->
+            <!-- Guest / Skip / Google -->
             <div class="auth-divider">
                 <span>or</span>
             </div>
+            <button class="auth-google-btn" onclick="playAsGoogle()">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="G">
+                Sign in with Google
+            </button>
             <button class="auth-guest-btn" onclick="playAsGuest()">Play as Guest</button>
 
             <button class="auth-back-btn" onclick="backToStart()">← Back to Start</button>
@@ -284,93 +288,85 @@
         <canvas id="map-canvas"></canvas>
 
         <div class="ui-layer">
-            <!-- Top Resource Bar -->
-            <!-- Top Management Bar (Dummynation-style) -->
-            <div class="top-bar" id="top-bar">
-                <div class="top-bar-left">
-                    <!-- Map Mode Selector -->
-                    <div class="map-mode-selector">
-                        <button class="map-mode-btn active" id="mode-countries"
-                            onclick="setMapMode('countries')">Countries</button>
-                        <button class="map-mode-btn" id="mode-population"
-                            onclick="setMapMode('population')">Population</button>
-                        <button class="map-mode-btn" id="mode-military"
-                            onclick="setMapMode('military')">Military</button>
+            <!-- DUMMYNATION UI LAYER -->
+            <!-- Floating Top Right Date -->
+            <div class="floating-date" id="date-display">8 Aug 2029</div>
+
+            <!-- Main Management Bar (Dummynation-style) -->
+            <div class="top-bar-layout">
+                <!-- Left: Mode -->
+                <div class="map-mode-block">
+                    <div class="color-spectrum">
+                        <div style="background:#818cf8;"></div>
+                        <div style="background:#ef4444;"></div>
+                        <div style="background:#f59e0b;"></div>
+                        <div style="background:#10b981;"></div>
+                        <div style="background:#8b5cf6;"></div>
+                        <div style="background:#3b82f6;"></div>
                     </div>
+                    <select id="map-mode-dropdown" onchange="setMapMode(this.value)">
+                        <option value="countries">Countries</option>
+                        <option value="population">Population</option>
+                        <option value="military">Military</option>
+                    </select>
                 </div>
-                <div class="top-bar-center">
-                    <div class="resource-pill money" title="Treasury">
-                        <span class="res-icon">💵</span>
-                        <span class="res-rate" id="res-money-rate">(+0)</span>
-                        <span class="res-val" id="res-money">0</span>
+
+                <!-- Center: Nation & Resources -->
+                <div class="center-console">
+                    <div class="nation-name" id="player-nation-name">Select Nation</div>
+
+                    <div class="resource-capsule">
+                        <div class="res-item money" title="Treasury">
+                            <span class="res-icon">💵</span>
+                            <span class="res-rate" id="res-money-rate">(+0)</span>
+                            <span class="res-val" id="res-money">0</span>
+                        </div>
+                        <div class="res-item research" title="Research Progress">
+                            <span class="res-icon">🧪</span>
+                            <span class="res-rate" id="res-mp-rate">(+0)</span>
+                            <span class="res-val" id="res-manpower">0K</span>
+                        </div>
+                        <div class="res-item military" title="Total Troops">
+                            <span class="res-icon">⭐</span>
+                            <span class="res-rate" id="res-troop-rate">(+0)</span>
+                            <span class="res-val" id="res-army">0</span>
+                        </div>
+
+                        <!-- Governance / Overview Tab Trigger inside capsule -->
+                        <button class="capsule-btn" onclick="switchTab('governance')" title="Governance">🏛️</button>
+                        <button class="capsule-btn" onclick="switchTab('troops')" title="Troops">🪖</button>
+
+                        <div class="res-item stability" title="Stability">
+                            <span class="res-icon">📋</span>
+                            <span class="res-val" id="res-stability">100%</span>
+                        </div>
+
+                        <!-- Options & Controls grouped on the right of center -->
+                        <div class="control-group">
+                            <button class="icon-btn" onclick="switchTab('overview')" title="Map Overview">🗺️</button>
+                            <button class="icon-btn" onclick="switchTab('economy')" title="Economy">📊</button>
+                            <button class="icon-btn" onclick="switchTab('diplomacy')" title="Diplomacy">🤝</button>
+                            <button class="icon-btn" onclick="switchTab('military')"
+                                title="Military Options">⚔️</button>
+                            <button class="icon-btn" onclick="switchTab('research')"
+                                title="Research & Development">🔬</button>
+                            <button class="icon-btn" onclick="saveGame()" title="Save Game">💾</button>
+                            <button class="icon-btn" id="speed-pause" onclick="setSpeed(0)" title="Pause">⏸</button>
+                            <button class="icon-btn" onclick="logout()" title="Exit">⏻</button>
+                        </div>
                     </div>
-                    <div class="resource-pill manpower" title="Manpower">
-                        <span class="res-icon">👥</span>
-                        <span class="res-rate" id="res-mp-rate">(+0)</span>
-                        <span class="res-val" id="res-manpower">0K</span>
-                    </div>
-                    <div class="resource-pill military" title="Total Troops">
-                        <span class="res-icon">⚔️</span>
-                        <span class="res-rate" id="res-troop-rate">(+0)</span>
-                        <span class="res-val" id="res-army">0</span>
-                    </div>
-                    <!-- Nation name -->
-                    <span id="player-flag" class="panel-flag" style="font-size:18px;margin-left:8px;">🏳️</span>
-                    <div class="nation-name" id="player-nation-name" style="font-size:13px;font-weight:700;">Select
-                        Nation</div>
-                    <div class="resource-pill pop" title="Population">
-                        <span class="res-icon">🏘️</span>
-                        <span class="res-val" id="res-pop">0M</span>
-                    </div>
-                    <div class="resource-pill stab" title="Stability">
-                        <span class="res-icon">⚖️</span>
-                        <span class="res-val" id="res-stability">100%</span>
-                    </div>
-                </div>
-                <div class="top-bar-right">
-                    <div class="speed-controls">
-                        <button class="speed-btn" id="speed-pause" onclick="setSpeed(0)" title="Pause">⏸</button>
-                        <button class="speed-btn active" id="speed-1" onclick="setSpeed(1)" title="Normal">▶</button>
-                        <button class="speed-btn" id="speed-2" onclick="setSpeed(2)" title="Fast">▶▶</button>
-                        <button class="speed-btn" id="speed-3" onclick="setSpeed(3)" title="Ultra">▶▶▶</button>
-                    </div>
-                    <span id="date-display" class="date-display">Jan 2024</span>
-                    <button class="icon-btn" onclick="saveGame()" title="Save Game">💾</button>
-                    <span id="user-badge" class="user-badge" style="font-size:11px;color:#a0a0bd;"></span>
-                    <button class="icon-btn" onclick="logout()" title="Exit to Menu">🚪</button>
                 </div>
             </div>
 
-            <!-- Bottom Tab Bar -->
-            <div class="bottom-bar" id="bottom-bar">
-                <button class="tab-btn active" id="tab-overview" onclick="switchTab('overview')">
-                    <span class="tab-icon">🗺️</span>
-                    <span class="tab-label">Overview</span>
-                </button>
-                <button class="tab-btn" id="tab-economy" onclick="switchTab('economy')">
-                    <span class="tab-icon">📊</span>
-                    <span class="tab-label">Economy</span>
-                </button>
-                <button class="tab-btn" id="tab-military" onclick="switchTab('military')">
-                    <span class="tab-icon">⚔️</span>
-                    <span class="tab-label">Military</span>
-                </button>
-                <button class="tab-btn" id="tab-troops" onclick="switchTab('troops')">
-                    <span class="tab-icon">🪖</span>
-                    <span class="tab-label">Troops</span>
-                </button>
-                <button class="tab-btn" id="tab-diplomacy" onclick="switchTab('diplomacy')">
-                    <span class="tab-icon">🤝</span>
-                    <span class="tab-label">Diplomacy</span>
-                </button>
-                <button class="tab-btn" id="tab-governance" onclick="switchTab('governance')">
-                    <span class="tab-icon">🏛️</span>
-                    <span class="tab-label">Governance</span>
-                </button>
-                <button class="tab-btn" id="tab-research" onclick="switchTab('research')">
-                    <span class="tab-icon">🔬</span>
-                    <span class="tab-label">Research</span>
-                </button>
+            <!-- Compass / Speed Slider -->
+            <div class="left-tools">
+                <div class="compass-wheel">
+                    <div class="compass-inner">✦</div>
+                </div>
+                <div class="time-slider-track">
+                    <input type="range" min="1" max="3" value="1" id="speed-slider" onchange="setSpeed(this.value)"
+                        orient="vertical">
+                </div>
             </div>
 
             <!-- Side Panel (contextual — shows when you click a country) -->
