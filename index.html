@@ -288,72 +288,72 @@
         <canvas id="map-canvas"></canvas>
 
         <div class="ui-layer">
-            <!-- DUMMYNATION UI LAYER -->
-            <!-- Floating Top Right Date -->
-            <div class="floating-date" id="date-display">8 Aug 2029</div>
+            <!-- Authentic Dummynation Top Bar -->
+            <div class="dn-top-container">
+                <div class="dn-nation-header" id="player-nation-name">United States of America</div>
+                <div class="dn-date" id="date-display">8 Aug 2029</div>
 
-            <!-- Main Management Bar (Dummynation-style) -->
-            <div class="top-bar-layout">
-                <!-- Left: Mode -->
-                <div class="map-mode-block">
-                    <div class="color-spectrum">
-                        <div style="background:#818cf8;"></div>
-                        <div style="background:#ef4444;"></div>
-                        <div style="background:#f59e0b;"></div>
-                        <div style="background:#10b981;"></div>
-                        <div style="background:#8b5cf6;"></div>
-                        <div style="background:#3b82f6;"></div>
+                <div class="dn-main-bar">
+                    <!-- Left: Mode and Panel triggers -->
+                    <div class="dn-left-section">
+                        <div class="dn-map-mode">
+                            <div class="color-spectrum">
+                                <div style="background:#818cf8;"></div>
+                                <div style="background:#ef4444;"></div>
+                                <div style="background:#f59e0b;"></div>
+                                <div style="background:#10b981;"></div>
+                                <div style="background:#8b5cf6;"></div>
+                                <div style="background:#3b82f6;"></div>
+                            </div>
+                            <select id="map-mode-dropdown" onchange="setMapMode(this.value)">
+                                <option value="countries">Political</option>
+                                <option value="diplomacy">Diplomacy</option>
+                                <option value="economy">Wealth (GDP)</option>
+                                <option value="population">Population</option>
+                                <option value="military">Military</option>
+                                <option value="stability">Stability</option>
+                                <option value="relations">Relations</option>
+                            </select>
+                        </div>
+                        <button class="dn-icon-btn dn-panel-trigger" onclick="switchTab('governance')"
+                            title="Country Info">📝</button>
                     </div>
-                    <select id="map-mode-dropdown" onchange="setMapMode(this.value)">
-                        <option value="countries">Countries</option>
-                        <option value="population">Population</option>
-                        <option value="military">Military</option>
-                    </select>
-                </div>
 
-                <!-- Center: Nation & Resources -->
-                <div class="center-console">
-                    <div class="nation-name" id="player-nation-name">Select Nation</div>
-
-                    <div class="resource-capsule">
-                        <div class="res-item money" title="Treasury">
-                            <span class="res-icon">💵</span>
+                    <!-- Center: Resources -->
+                    <div class="dn-center-section">
+                        <div class="dn-res-pill money">
+                            <span class="dn-res-icon">🏢</span>
                             <span class="res-rate" id="res-money-rate">(+0)</span>
                             <span class="res-val" id="res-money">0</span>
                         </div>
-                        <div class="res-item research" title="Research Progress">
-                            <span class="res-icon">🧪</span>
+                        <div class="dn-res-pill science" onclick="switchTab('research')">
+                            <span class="dn-res-icon">🧪</span>
                             <span class="res-rate" id="res-mp-rate">(+0)</span>
-                            <span class="res-val" id="res-manpower">0K</span>
+                            <span class="res-val" id="res-science">0</span>
                         </div>
-                        <div class="res-item military" title="Total Troops">
-                            <span class="res-icon">⭐</span>
+                        <div class="dn-res-pill army" onclick="switchTab('troops')">
+                            <span class="dn-res-icon">⭐</span>
                             <span class="res-rate" id="res-troop-rate">(+0)</span>
                             <span class="res-val" id="res-army">0</span>
                         </div>
-
-                        <!-- Governance / Overview Tab Trigger inside capsule -->
-                        <button class="capsule-btn" onclick="switchTab('governance')" title="Governance">🏛️</button>
-                        <button class="capsule-btn" onclick="switchTab('troops')" title="Troops">🪖</button>
-
-                        <div class="res-item stability" title="Stability">
-                            <span class="res-icon">📋</span>
-                            <span class="res-val" id="res-stability">100%</span>
+                        <div class="dn-res-pill pop">
+                            <span class="dn-res-icon">👥</span>
+                            <span class="res-val" id="res-pop">0M</span>
                         </div>
-
-                        <!-- Options & Controls grouped on the right of center -->
-                        <div class="control-group">
-                            <button class="icon-btn" onclick="switchTab('overview')" title="Map Overview">🗺️</button>
-                            <button class="icon-btn" onclick="switchTab('economy')" title="Economy">📊</button>
-                            <button class="icon-btn" onclick="switchTab('diplomacy')" title="Diplomacy">🤝</button>
-                            <button class="icon-btn" onclick="switchTab('military')"
-                                title="Military Options">⚔️</button>
-                            <button class="icon-btn" onclick="switchTab('research')"
-                                title="Research & Development">🔬</button>
-                            <button class="icon-btn" onclick="saveGame()" title="Save Game">💾</button>
-                            <button class="icon-btn" id="speed-pause" onclick="setSpeed(0)" title="Pause">⏸</button>
-                            <button class="icon-btn" onclick="logout()" title="Exit">⏻</button>
+                        <div class="dn-res-pill stability">
+                            <span class="dn-res-icon">⚖️</span>
+                            <span class="res-val" id="res-stability">(100%)</span>
                         </div>
+                    </div>
+
+                    <div class="dn-right-section">
+                        <button class="dn-icon-btn" onclick="switchTab('military')" title="Statistics">📊</button>
+                        <button class="dn-icon-btn" onclick="switchTab('economy')" title="Settings">🔧</button>
+                        <button class="dn-icon-btn" onclick="switchTab('diplomacy')" title="Options">⚙️</button>
+                        <button class="dn-icon-btn" onclick="saveGame()" title="Save Game">💾</button>
+                        <button class="dn-icon-btn" id="speed-pause" onclick="setSpeed(0)" title="Pause">⏸</button>
+                        <button class="dn-icon-btn" id="speed-1" onclick="setSpeed(1)" title="Play">▶</button>
+                        <button class="dn-icon-btn exit-btn" onclick="logout()" title="Exit">⏻</button>
                     </div>
                 </div>
             </div>

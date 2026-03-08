@@ -3,7 +3,7 @@
 // ============================================
 
 // ---- Constants ----
-const SCALE = 3;
+const SCALE = 4;
 const TICK_MS = 800;
 const COLORS_POOL = [
     '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
@@ -219,8 +219,14 @@ function setupCanvas() {
 
 function resize() {
     if (!canvas) return;
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(dpr, dpr);
 }
 
 // ============================================
@@ -304,10 +310,15 @@ window.playAsGuest = function () {
 };
 
 window.playAsGoogle = function () {
-    // Basic mock placeholder for Gmail integration
-    // Replace this with real Google OAuth SDK implementation later
-    currentUser = 'Google User';
-    enterGame();
+    const btn = document.querySelector('.auth-google-btn');
+    if (btn) btn.innerHTML = 'Connecting to Google...';
+
+    // Simulate network delay
+    setTimeout(() => {
+        currentUser = 'Google Commander';
+        notify('Successfully signed in with Google!', 'good');
+        enterGame();
+    }, 1200);
 };
 
 function enterGame() {
@@ -842,11 +853,11 @@ function updateTopBar() {
         moneyRate.style.color = net >= 0 ? '#4ade80' : '#f87171';
     }
 
-    const manpowerEl = document.getElementById('res-manpower');
-    if (manpowerEl) manpowerEl.textContent = Math.floor(p.manpower) + 'K';
+    const scienceEl = document.getElementById('res-science');
+    if (scienceEl) scienceEl.textContent = Math.floor(G.techProgress || 0);
 
     const mpRate = document.getElementById('res-mp-rate');
-    if (mpRate) mpRate.textContent = `(+${p.recruitRate.toFixed(1)})`;
+    if (mpRate) mpRate.textContent = `(+${(p.budgetResearch / 5).toFixed(1)})`;
 
     const armyEl = document.getElementById('res-army');
     if (armyEl) {
@@ -855,16 +866,13 @@ function updateTopBar() {
         armyEl.textContent = total.toLocaleString();
     }
 
-    const troopRate = document.getElementById('res-troop-rate');
-    if (troopRate) troopRate.textContent = `(${Math.floor(p.armyStrength)})`;
-
     const popEl = document.getElementById('res-pop');
-    if (popEl) popEl.textContent = Math.floor(p.population) + 'M';
+    if (popEl) popEl.textContent = (p.population).toFixed(1) + 'M';
 
-    const stabEl = document.getElementById('res-stability');
-    if (stabEl) {
-        stabEl.textContent = Math.floor(p.stability) + '%';
-        stabEl.style.color = p.stability > 50 ? '#4ade80' : '#f87171';
+    const stabilityEl = document.getElementById('res-stability');
+    if (stabilityEl) {
+        stabilityEl.textContent = Math.floor(p.stability) + '%';
+        stabilityEl.style.color = p.stability > 50 ? '#4ade80' : '#f87171';
     }
 
     // Date display

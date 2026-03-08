@@ -45,32 +45,51 @@ function renderMap() {
         if (G.mapMode === 'population') {
             const maxPop = 1428;
             const ratio = Math.min(1, c.population / maxPop);
-            const h = 120 - ratio * 120;
-            fill = `hsl(${h}, 70%, ${30 + ratio * 40}%)`;
+            fill = `hsl(210, 70%, ${Math.max(10, 90 - ratio * 80)}%)`; // Blue scale
         } else if (G.mapMode === 'military') {
-            const maxMil = 100;
-            const ratio = Math.min(1, c.armyStrength / maxMil);
-            const h = 240 - ratio * 240;
-            fill = `hsl(${h}, 80%, ${25 + ratio * 35}%)`;
+            const ratio = Math.min(1, c.armyStrength / 100);
+            fill = `hsl(0, 70%, ${Math.max(10, 90 - ratio * 80)}%)`; // Red scale
+        } else if (G.mapMode === 'economy') {
+            const ratio = Math.min(1, c.gdp / 20000);
+            fill = `hsl(140, 70%, ${Math.max(10, 90 - ratio * 80)}%)`; // Green scale
+        } else if (G.mapMode === 'diplomacy') {
+            if (p) {
+                if (c.id === p.id) fill = '#3b82f6';
+                else if (p.atWar.includes(c.id)) fill = '#ef4444';
+                else if (p.allies.includes(c.id)) fill = '#10b981';
+                else if (p.pacts.includes(c.id)) fill = '#8b5cf6';
+                else fill = '#334155'; // Neutral
+            } else {
+                fill = '#334155';
+            }
+        } else if (G.mapMode === 'stability') {
+            const ratio = Math.min(1, c.stability / 100);
+            fill = `hsl(10, 80%, ${Math.max(10, 20 + ratio * 60)}%)`; // Red-Yellow-Green scale roughly
+        } else if (G.mapMode === 'relations') {
+            if (p) {
+                const rel = getRelation(p, c.id);
+                const ratio = (rel + 100) / 200; // 0..1
+                fill = `hsl(${ratio * 120}, 70%, 45%)`; // Red (hostile) to Green (friendly)
+            } else {
+                fill = '#334155';
+            }
         } else {
-            // Countries mode — Override for player relations coloring
+            // Political mode
             if (p && !isPlayer) {
                 if (p.atWar.includes(c.id)) fill = blendColor(c.color, '#ef4444', 0.6);
                 else if (p.allies.includes(c.id)) fill = blendColor(c.color, '#10b981', 0.4);
-                else if (p.pacts.includes(c.id)) fill = blendColor(c.color, '#60a5fa', 0.3);
             }
-            if (c.isHumanPlayer) fill = c.color;
         }
 
         ctx.fillStyle = fill;
-        if (isHovered) { ctx.fillStyle = lightenColor(fill, 30); }
-        if (isSelected) { ctx.fillStyle = '#eab308'; }
+        if (isHovered) { ctx.fillStyle = lightenColor(fill, 20); }
+        if (isSelected) { ctx.fillStyle = '#facc15'; }
 
         ctx.fill();
 
-        // Border
-        ctx.lineWidth = (isSelected || isHovered) ? 1.5 / G.zoom : 0.4 / G.zoom;
-        ctx.strokeStyle = isSelected ? '#fbbf24' : (isHovered ? '#94a3b8' : 'rgba(0,0,0,0.6)');
+        // Border - thinner for "quality" look, highlight selected
+        ctx.lineWidth = isSelected ? 2 / G.zoom : (isHovered ? 1 / G.zoom : 0.4 / G.zoom);
+        ctx.strokeStyle = isSelected ? '#fff' : (isHovered ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.15)');
         ctx.stroke();
     });
 
@@ -510,17 +529,39 @@ window.setBudget = function (cat, val) {
     switchTab('economy');
 };
 
-// ---- Military Panel ----
+// ---- Military & Global Statistics Panel ----
 function buildMilitaryPanel() {
     const p = playerC();
     if (!p) return '';
-    return `
+
+    // Sort all countries by power (army strength + GDP/10)
+    const ranking = [...G.countries].sort((a, b) => (b.armyStrength + b.gdp / 10) - (a.armyStrength + a.gdp / 10));
+    const pRank = ranking.findIndex(c => c.id === p.id) + 1;
+
+    let html = `
+    <div class="dn-stats-panel">
         <div class="stats-grid">
+            <div class="stat-card"><div class="stat-label">Global Rank</div><div class="stat-value">#${pRank}</div></div>
             <div class="stat-card"><div class="stat-label">Army Strength</div><div class="stat-value" style="color:#f87171;">${Math.floor(p.armyStrength)}</div></div>
-            <div class="stat-card"><div class="stat-label">Manpower</div><div class="stat-value">${Math.floor(p.manpower)}K / ${Math.floor(p.maxManpower)}K</div></div>
-            <div class="stat-card"><div class="stat-label">Upkeep</div><div class="stat-value" style="color:#fbbf24;">-${p.armyUpkeep.toFixed(1)}B/d</div></div>
-            <div class="stat-card"><div class="stat-label">Recruit Rate</div><div class="stat-value" style="color:#60a5fa;">+${p.recruitRate.toFixed(1)}/d</div></div>
+            <div class="stat-card"><div class="stat-label">Manpower</div><div class="stat-value">${Math.floor(p.manpower)}K</div></div>
+            <div class="stat-card"><div class="stat-label">Max Manpower</div><div class="stat-value">${Math.floor(p.maxManpower)}K</div></div>
         </div>
+
+        <div class="section-title">Global Ranking (Top 10)</div>
+        <div class="dn-ranking-list">`;
+
+    ranking.slice(0, 10).forEach((c, i) => {
+        const isSelf = c.id === p.id;
+        html += `
+            <div class="dn-ranking-item ${isSelf ? 'self' : ''}">
+                <span class="rank-num">#${i + 1}</span>
+                <span class="rank-flag">${c.flag}</span>
+                <span class="rank-name">${c.name}</span>
+                <span class="rank-val">${Math.floor(c.armyStrength + c.gdp / 10)}</span>
+            </div>`;
+    });
+
+    html += `</div>
 
         <div class="section-title">Standing Orders</div>
         <div class="order-grid">
@@ -535,8 +576,8 @@ function buildMilitaryPanel() {
             </button>
         </div>
 
-        <div class="section-title">Active Wars</div>
-        ${p.atWar.length === 0 ? '<div style="font-size:12px;color:var(--text-muted);padding:8px;">No active wars. You are at peace.</div>' :
+        <div class="section-title">Active Conflicts</div>
+        ${p.atWar.length === 0 ? '<div class="no-data">No active conflicts.</div>' :
             p.atWar.map(eid => {
                 const e = getC(eid);
                 if (!e) return '';
@@ -549,18 +590,11 @@ function buildMilitaryPanel() {
                         <span class="war-prog-pct">${Math.floor(prog)}%</span>
                     </div>
                     <div class="war-prog-bar"><div class="war-prog-fill" style="width:${prog}%"></div></div>
-                    <div style="display:flex;gap:6px;margin-top:4px;">
-                        <button class="panel-btn btn-trade" style="font-size:11px;padding:6px;" onclick="playerMakePeace('${eid}')">🕊️ Peace</button>
-                    </div>
+                    <button class="dn-peace-btn" onclick="playerMakePeace('${eid}')">PROPOSE PEACE</button>
                 </div>`;
             }).join('')}
-
-        <div class="section-title">Army Details</div>
-        <div class="stat-card">
-            <div class="army-stat-row"><span class="army-stat-key">Budget allocation</span><span class="army-stat-val">${p.budgetMilitary}%</span></div>
-            <div class="army-stat-row"><span class="army-stat-key">Conquered territories</span><span class="army-stat-val">${p.conqueredTerritories.length}</span></div>
-            <div class="army-stat-row"><span class="army-stat-key">Overextension</span><span class="army-stat-val" style="color:${p.overextension > 30 ? '#f87171' : '#4ade80'}">${Math.floor(p.overextension)}%</span></div>
-        </div>`;
+    </div>`;
+    return html;
 }
 
 window.setOrder = function (order) {
@@ -617,56 +651,74 @@ function buildDiplomacyPanel() {
     return html;
 }
 
-// ---- Research Panel ----
+// ---- R&D Panel (Dummynation Style) ----
+let selectedTechId = 'nuclear_program';
+
 function buildResearchPanel() {
     const p = playerC();
     if (!p) return '';
-    let html = '';
-
-    if (G.techQueue) {
-        const tech = TECHS.find(t => t.id === G.techQueue);
-        if (tech) {
-            const pct = Math.min(100, (G.techProgress / tech.cost) * 100);
-            html += `
-            <div class="section-title">Currently Researching</div>
-            <div class="war-progress-card" style="border-color:var(--accent-purple);background:rgba(139,92,246,0.1);">
-                <div class="war-prog-header">
-                    <span class="war-prog-title" style="color:var(--accent-purple);">${tech.name}</span>
-                    <span class="war-prog-pct" style="color:var(--accent-purple);">${Math.floor(pct)}%</span>
-                </div>
-                <div class="war-prog-bar"><div class="war-prog-fill" style="width:${pct}%;background:linear-gradient(90deg,var(--accent-blue),var(--accent-purple));"></div></div>
-            </div>`;
-        }
-    }
-
-    html += `<div class="section-title">Tech Tree</div><div class="tech-grid">`;
+    let html = `
+    <div class="dn-rd-container">
+        <!-- Top Tech Icons Grid -->
+        <div class="dn-rd-icons">`;
 
     TECHS.forEach(tech => {
         const researched = p.researchedTechs.includes(tech.id);
         const isResearching = G.techQueue === tech.id;
-        const canResearch = !researched && !G.techQueue && tech.requires.every(r => p.researchedTechs.includes(r));
-        const locked = !researched && !canResearch && !isResearching;
+        const isSelected = selectedTechId === tech.id ? 'selected' : '';
+        const locked = !researched && !isResearching && !tech.requires.every(r => p.researchedTechs.includes(r));
 
-        let cls = 'tech-card';
-        if (researched) cls += ' researched';
-        else if (isResearching) cls += ' researching';
-        else if (locked) cls += ' locked';
+        let iconHtml = '';
+        if (tech.name.includes('Nuclear')) iconHtml = '☢️';
+        else if (tech.name.includes('Space')) iconHtml = '🚀';
+        else if (tech.name.includes('Trade')) iconHtml = '🏢';
+        else if (tech.name.includes('Tax')) iconHtml = '💵';
+        else if (tech.name.includes('Conscription')) iconHtml = '🎖️';
+        else if (tech.name.includes('Blitzkrieg')) iconHtml = '⚡';
+        else if (tech.name.includes('Fort')) iconHtml = '🛡️';
+        else if (tech.name.includes('Propaganda')) iconHtml = '📰';
+        else if (tech.name.includes('Spy')) iconHtml = '🕵️';
+        else if (tech.name.includes('Labs')) iconHtml = '🧫';
+        else iconHtml = '🔬';
 
-        let statusText = '';
-        if (researched) statusText = '<span class="tech-status" style="color:var(--accent-green);">✓ Researched</span>';
-        else if (isResearching) statusText = '<span class="tech-status" style="color:var(--accent-yellow);">⏳ In Progress</span>';
-        else if (locked) statusText = '<span class="tech-status" style="color:var(--text-muted);">🔒 Locked</span>';
+        let statusCls = researched ? 'researched' : (isResearching ? 'researching' : (locked ? 'locked' : 'available'));
 
         html += `
-            <div class="${cls}" ${canResearch ? `onclick="startResearch('${tech.id}')"` : ''}>
-                <div class="tech-name">${tech.name}</div>
-                <div class="tech-desc">${tech.desc}</div>
-                <div class="tech-cost">Cost: ${tech.cost} RP</div>
-                ${statusText}
+            <div class="dn-rd-icon-box ${statusCls} ${isSelected}" onclick="selectedTechId='${tech.id}'; switchTab('research');">
+                <span class="dn-rd-emoji">${iconHtml}</span>
             </div>`;
     });
-    html += '</div>';
 
+    html += `</div>
+        <!-- Selected Tech Details -->
+        <div class="dn-rd-details">`;
+
+    const tech = TECHS.find(t => t.id === selectedTechId);
+    if (tech) {
+        const cleanName = tech.name.replace(/[^\x00-\x7F]/g, "").trim(); // remove emoji
+        html += `<div class="dn-rd-title">${cleanName}</div>
+                 <div class="dn-rd-desc">${tech.desc}</div>`;
+
+        const researched = p.researchedTechs.includes(tech.id);
+        const isResearching = G.techQueue === tech.id;
+        const canResearch = !researched && !G.techQueue && tech.requires.every(r => p.researchedTechs.includes(r));
+
+        if (researched) {
+            html += `<button class="dn-rd-btn researched" disabled>Researched</button>`;
+        } else if (isResearching) {
+            const pct = Math.min(100, (G.techProgress / tech.cost) * 100);
+            html += `<div class="dn-rd-progress">
+                        <div class="dn-rd-progress-fill" style="width:${pct}%;"></div>
+                        <div class="dn-rd-progress-text">${Math.floor(pct)}%</div>
+                     </div>`;
+        } else if (canResearch) {
+            html += `<button class="dn-rd-btn available" onclick="startResearch('${tech.id}')">RESEARCH (${tech.cost} RP)</button>`;
+        } else {
+            html += `<button class="dn-rd-btn locked" disabled>Locked (Missing Prerequisites)</button>`;
+        }
+    }
+
+    html += `</div></div>`;
     return html;
 }
 
@@ -676,14 +728,17 @@ window.startResearch = function (techId) {
     if (!tech) return;
     const p = playerC();
     if (!tech.requires.every(r => p.researchedTechs.includes(r))) { notify('Prerequisites not met.', 'warn'); return; }
+
     G.techQueue = techId;
     G.techProgress = 0;
+
     // Sync to multiplayer tech queue
-    if (G.mpTechQueues[G.player]) {
+    if (G.mpTechQueues && G.mpTechQueues[G.player]) {
         G.mpTechQueues[G.player].queue = techId;
         G.mpTechQueues[G.player].progress = 0;
     }
-    notify(`🔬 Began research: ${tech.name}`, 'event');
+
+    notify(`🔬 Started research: ${tech.name}`, 'info');
     switchTab('research');
 };
 
