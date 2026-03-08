@@ -4,506 +4,429 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Domination</title>
-    <style>
-        body,
-        html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #1a1a1a;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: white;
-        }
-
-        #game-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-
-        #map-canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            cursor: grab;
-        }
-
-        #map-canvas:active {
-            cursor: grabbing;
-        }
-
-        /* UI Overlay */
-        .ui-layer {
-            position: absolute;
-            pointer-events: none;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-        }
-
-        /* Top Bar */
-        .top-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            justify-content: space-between;
-            pointer-events: auto;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .resource {
-            display: flex;
-            align-items: center;
-            margin-right: 25px;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .resource-icon {
-            margin-right: 8px;
-            font-size: 18px;
-        }
-
-        .liquidity {
-            color: #4ade80;
-        }
-
-        .manpower {
-            color: #f87171;
-        }
-
-        .research {
-            color: #60a5fa;
-        }
-
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Bottom Bar */
-        .bottom-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 90px;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: auto;
-            gap: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .action-btn {
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-width: 90px;
-            font-size: 13px;
-        }
-
-        .action-btn:hover {
-            background: #334155;
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        }
-
-        .action-btn.active {
-            background: #2563eb;
-            border-color: #60a5fa;
-        }
-
-        .action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .action-btn i {
-            font-size: 22px;
-            margin-bottom: 6px;
-        }
-
-        /* Menu Button */
-        .menu-btn {
-            background: transparent;
-            border: 1px solid #555;
-            color: #ddd;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: 0.2s;
-        }
-
-        .menu-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border-color: #888;
-        }
-
-        /* Side Panel */
-        .side-panel {
-            position: absolute;
-            right: 20px;
-            top: 80px;
-            bottom: 110px;
-            width: 320px;
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 12px;
-            transform: translateX(120%);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: auto;
-            overflow-y: auto;
-            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .side-panel.open {
-            transform: translateX(0);
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 10px;
-        }
-
-        .panel-title {
-            font-size: 22px;
-            font-weight: 800;
-            color: white;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            cursor: pointer;
-            font-size: 20px;
-        }
-
-        .close-btn:hover {
-            color: white;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .stat-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px;
-            border-radius: 6px;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-value {
-            font-size: 15px;
-            font-weight: bold;
-            margin-top: 2px;
-        }
-
-        /* Relations Bar */
-        .relations-container {
-            margin-bottom: 20px;
-        }
-
-        .relations-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            margin-bottom: 5px;
-            color: #cbd5e1;
-        }
-
-        .progress-bg {
-            height: 8px;
-            background: #334155;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ef4444, #eab308, #22c55e);
-            width: 50%;
-            transition: width 0.3s;
-        }
-
-        /* Action Buttons specific to Panel */
-        .panel-actions {
-            display: grid;
-            gap: 10px;
-        }
-
-        .panel-btn {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-war {
-            background: #7f1d1d;
-            color: #fca5a5;
-            border: 1px solid #991b1b;
-        }
-
-        .btn-war:hover {
-            background: #991b1b;
-        }
-
-        .btn-alliance {
-            background: #14532d;
-            color: #86efac;
-            border: 1px solid #166534;
-        }
-
-        .btn-alliance:hover {
-            background: #166534;
-        }
-
-        .btn-trade {
-            background: #0f172a;
-            color: #e2e8f0;
-            border: 1px solid #334155;
-        }
-
-        .btn-trade:hover {
-            background: #1e293b;
-            border-color: #64748b;
-        }
-
-        /* Loading Screen */
-        #loading-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #0f172a;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            pointer-events: auto;
-        }
-
-        .loader {
-            border: 4px solid #1e293b;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .loading-text {
-            font-size: 18px;
-            font-weight: 300;
-            color: #94a3b8;
-            letter-spacing: 1px;
-        }
-
-        /* Notifications */
-        #notifications {
-            position: absolute;
-            bottom: 100px;
-            left: 20px;
-            width: 300px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: none;
-        }
-
-        .notif {
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 6px;
-            border-left: 4px solid #3b82f6;
-            font-size: 13px;
-            animation: slideIn 0.3s ease-out;
-            pointer-events: auto;
-            opacity: 0.9;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(-100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 0.9;
-            }
-        }
-    </style>
+    <meta name="description"
+        content="Global Domination - A grand strategy game of world conquest, diplomacy, and empire management.">
+    <title>Global Domination — Conquer the World</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- PeerJS for Online Multiplayer -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 
 <body>
-    <div id="loading-screen">
-        <div class="loader"></div>
-        <div class="loading-text">Downloading Satellite Data... (Requires Online)</div>
+
+    <!-- ╔══════════════════════════════════════╗ -->
+    <!-- ║        LANDING / START PAGE          ║ -->
+    <!-- ╚══════════════════════════════════════╝ -->
+    <div id="start-page" class="start-page">
+        <div class="start-bg-effects">
+            <div class="bg-orb orb-1"></div>
+            <div class="bg-orb orb-2"></div>
+            <div class="bg-orb orb-3"></div>
+            <div class="bg-grid"></div>
+        </div>
+
+        <div class="start-content">
+            <!-- Header -->
+            <div class="start-header">
+                <div class="start-globe">🌍</div>
+                <h1 class="start-title">GLOBAL<br>DOMINATION</h1>
+                <p class="start-tagline">Conquer nations. Forge alliances. Rule the world.</p>
+            </div>
+
+            <!-- Feature Cards -->
+            <div class="start-features">
+                <div class="feature-card">
+                    <span class="feature-icon">⚔️</span>
+                    <div class="feature-title">Warfare</div>
+                    <div class="feature-desc">Command armies, wage wars, and conquer territory across the globe</div>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🤝</span>
+                    <div class="feature-title">Diplomacy</div>
+                    <div class="feature-desc">Form alliances, sign pacts, or betray your neighbors</div>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📊</span>
+                    <div class="feature-title">Economy</div>
+                    <div class="feature-desc">Manage taxes, budgets, and trade to fund your empire</div>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🔬</span>
+                    <div class="feature-title">Research</div>
+                    <div class="feature-desc">Unlock technologies from trade networks to nuclear weapons</div>
+                </div>
+            </div>
+
+            <!-- How to Play / handbook -->
+            <div class="start-handbook">
+                <h3 class="handbook-title">Commander's Handbook</h3>
+                <div class="handbook-grid">
+                    <div class="handbook-item">
+                        <strong>1. Manage Resources:</strong> Keep your treasury positive and manpower high to maintain
+                        a strong military.
+                    </div>
+                    <div class="handbook-item">
+                        <strong>2. Research Tech:</strong> Invest in R&D to unlock powerful military and economic
+                        bonuses.
+                    </div>
+                    <div class="handbook-item">
+                        <strong>3. Diplomacy:</strong> Not every war needs to be fought alone. Use alliances
+                        strategically.
+                    </div>
+                    <div class="handbook-item">
+                        <strong>4. Global Domination:</strong> Conquer every nation to win the game. Stability is key
+                        for large empires.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Details -->
+            <div class="start-details">
+                <div class="detail-row">
+                    <span class="detail-label">🗺️ Real World Map</span>
+                    <span class="detail-value">80+ Nations with Accurate Borders</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">👥 Multiplayer</span>
+                    <span class="detail-value">Online Competitions (Coming Soon)</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">🎲 Events</span>
+                    <span class="detail-value">Pandemics, Booms, Rebellions & More</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">💾 Save System</span>
+                    <span class="detail-value">Auto-saves to Browser Storage</span>
+                </div>
+            </div>
+
+            <!-- CTA -->
+            <button class="start-play-btn" onclick="showAuth()">
+                <span>PLAY NOW</span>
+                <span class="btn-arrow">→</span>
+            </button>
+
+            <div class="start-version">v1.0 — Made with ❤️ for Strategy Fans</div>
+        </div>
     </div>
 
-    <div id="game-container">
-        <canvas id="map-canvas"></canvas>
+    <!-- ╔══════════════════════════════════════╗ -->
+    <!-- ║       SIGN IN / SIGN UP SCREEN       ║ -->
+    <!-- ╚══════════════════════════════════════╝ -->
+    <div id="auth-screen" class="auth-screen" style="display:none;">
+        <div class="auth-bg-effects">
+            <div class="bg-orb orb-1"></div>
+            <div class="bg-orb orb-2"></div>
+        </div>
 
-        <div class="ui-layer">
-            <div class="top-bar">
-                <div style="display:flex;">
-                    <div class="resource liquidity" title="Money available for actions"><span
-                            class="resource-icon">💰</span><span id="res-money">0 M</span></div>
-                    <div class="resource manpower" title="Available soldiers"><span class="resource-icon">👥</span><span
-                            id="res-manpower">0 K</span></div>
-                    <div class="resource research" title="Technology Level"><span class="resource-icon">🔬</span><span
-                            id="res-research">1.0</span></div>
-                </div>
-                <div class="control-group">
-                    <span id="date-display"
-                        style="font-weight:600; font-variant-numeric: tabular-nums; width:100px; text-align:center;">Jan
-                        2024</span>
-                    <button class="menu-btn" onclick="saveGame()">💾 Save</button>
-                    <button class="menu-btn" onclick="loadGame()">📂 Load</button>
-                    <button class="menu-btn" onclick="togglePause()" id="pause-btn">⏸️</button>
-                </div>
+        <div class="auth-container">
+            <div class="auth-header">
+                <div class="auth-globe">🌍</div>
+                <h2 class="auth-title">Welcome, Commander</h2>
+                <p class="auth-subtitle">Sign in to save your progress and track conquests</p>
             </div>
 
-            <div class="side-panel" id="country-panel">
-                <div class="panel-header">
-                    <div class="panel-title" id="panel-title">Country Name</div>
-                    <button class="close-btn" onclick="closePanel()">×</button>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-label">GDP</div>
-                        <div class="stat-value" id="panel-gdp">$0 B</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Population</div>
-                        <div class="stat-value" id="panel-pop">0 M</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Military Power</div>
-                        <div class="stat-value" id="panel-mil">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Ideology</div>
-                        <div class="stat-value" id="panel-ideology">Democracy</div>
-                    </div>
-                </div>
-
-                <div class="relations-container">
-                    <div class="relations-label">
-                        <span>Relations</span>
-                        <span id="relations-val">Neutral (0)</span>
-                    </div>
-                    <div class="progress-bg">
-                        <div class="progress-fill" id="relations-bar" style="width: 50%;"></div>
-                    </div>
-                </div>
-
-                <div class="panel-actions">
-                    <button class="panel-btn btn-trade" onclick="actionImproveRelations()">
-                        <i>🤝</i> Improve Relations ($5M)
-                    </button>
-                    <button class="panel-btn btn-alliance" onclick="actionAlliance()">
-                        <i>🛡️</i> Form Alliance
-                    </button>
-                    <button class="panel-btn btn-war" onclick="actionDeclareWar()">
-                        <i>⚔️</i> Declare War
-                    </button>
-                </div>
-
-                <div style="margin-top: 20px; font-size: 12px; color: #64748b; line-height: 1.4;">
-                    <strong style="color: #94a3b8;">Strategic Analysis:</strong><br>
-                    <span id="panel-analysis">No data available.</span>
-                </div>
+            <!-- Tab Switcher -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="auth-signin-tab" onclick="switchAuthTab('signin')">Sign In</button>
+                <button class="auth-tab" id="auth-signup-tab" onclick="switchAuthTab('signup')">Sign Up</button>
             </div>
 
-            <div id="notifications"></div>
+            <!-- Sign In Form -->
+            <div id="signin-form" class="auth-form">
+                <div class="auth-field">
+                    <label class="auth-label" for="signin-username">👤 Username</label>
+                    <input type="text" id="signin-username" class="auth-input" placeholder="Enter your username"
+                        autocomplete="username">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label" for="signin-password">🔒 Password</label>
+                    <input type="password" id="signin-password" class="auth-input" placeholder="Enter your password"
+                        autocomplete="current-password">
+                </div>
+                <div id="signin-error" class="auth-error"></div>
+                <button class="auth-submit-btn" onclick="signIn()">Sign In →</button>
+            </div>
 
-            <div class="bottom-bar">
-                <button class="action-btn active" id="mode-diplomacy" onclick="setMode('diplomacy')">
-                    <i>🌐</i> Diplomacy
+            <!-- Sign Up Form -->
+            <div id="signup-form" class="auth-form" style="display:none;">
+                <div class="auth-field">
+                    <label class="auth-label" for="signup-username">👤 Choose Username</label>
+                    <input type="text" id="signup-username" class="auth-input" placeholder="Pick a commander name"
+                        autocomplete="username">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label" for="signup-password">🔒 Password</label>
+                    <input type="password" id="signup-password" class="auth-input" placeholder="Create a password"
+                        autocomplete="new-password">
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label" for="signup-confirm">🔒 Confirm Password</label>
+                    <input type="password" id="signup-confirm" class="auth-input" placeholder="Confirm your password"
+                        autocomplete="new-password">
+                </div>
+                <div id="signup-error" class="auth-error"></div>
+                <button class="auth-submit-btn" onclick="signUp()">Create Account →</button>
+            </div>
+
+            <!-- Guest / Skip -->
+            <div class="auth-divider">
+                <span>or</span>
+            </div>
+            <button class="auth-guest-btn" onclick="playAsGuest()">Play as Guest</button>
+
+            <button class="auth-back-btn" onclick="backToStart()">← Back to Start</button>
+        </div>
+    </div>
+
+    <!-- ╔══════════════════════════════════════╗ -->
+    <!-- ║        LOADING SCREEN                ║ -->
+    <!-- ╚══════════════════════════════════════╝ -->
+    <div id="loading-screen" style="display:none;">
+        <div class="loader-ring">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <div class="loading-title">GLOBAL DOMINATION</div>
+        <div class="loading-subtitle">Initializing world simulation...</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar-fill" id="loading-bar"></div>
+        </div>
+    </div>
+
+    <!-- Mode Selection Modal -->
+    <div id="mode-select-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-glass" style="max-width:480px;">
+            <h2 class="modal-title">🌍 GLOBAL DOMINATION</h2>
+            <p class="modal-desc">Choose your game mode</p>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <button class="mode-card" id="btn-singleplayer" onclick="selectMode('single')">
+                    <span class="mode-icon">👤</span>
+                    <div>
+                        <div class="mode-name">Singleplayer</div>
+                        <div class="mode-desc">You vs AI — conquer the world alone</div>
+                    </div>
                 </button>
-                <button class="action-btn" id="mode-military" onclick="setMode('military')">
-                    <i>🎯</i> Conquest
-                </button>
-                <button class="action-btn" id="mode-economy" onclick="setMode('economy')">
-                    <i>📈</i> Economy
-                </button>
-                <button class="action-btn" id="mode-research" onclick="setMode('research')">
-                    <i>🚀</i> Tech Tree
+                <button class="mode-card" id="btn-multiplayer" onclick="selectMode('multi')">
+                    <span class="mode-icon">🌐</span>
+                    <div>
+                        <div class="mode-name">Online Multiplayer</div>
+                        <div class="mode-desc">Play against friends across different devices (P2P)</div>
+                    </div>
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Online Lobby Modal -->
+    <div id="online-lobby-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-glass" style="max-width:480px;">
+            <h2 class="modal-title">📡 ONLINE LOBBY</h2>
+            <p class="modal-desc">Connect with another commander to begin</p>
+
+            <div id="lobby-host-section" class="lobby-section">
+                <button class="panel-btn btn-primary" onclick="hostGame()">Host New Game</button>
+                <div id="host-code-display" style="display:none; margin-top:12px;">
+                    <div class="section-title">Your Room Code:</div>
+                    <div style="display:flex; gap:8px; align-items:center; justify-content:center;">
+                        <div class="room-code-box" id="room-code">WAITING...</div>
+                        <button class="icon-btn" onclick="copyRoomCode()" title="Copy Code">📋</button>
+                    </div>
+                    <p class="small-info">Share this code with your opponent</p>
+                    <div class="loading-dots">Waiting for connection<span>.</span><span>.</span><span>.</span></div>
+                </div>
+            </div>
+
+            <div class="auth-divider"><span>OR</span></div>
+
+            <div id="lobby-join-section" class="lobby-section">
+                <div class="auth-field">
+                    <label class="auth-label">Enter Friend's Code</label>
+                    <input type="text" id="join-room-input" class="auth-input" placeholder="e.g. gdom-xxxx">
+                </div>
+                <button class="panel-btn" onclick="joinGame()">Join Game</button>
+            </div>
+
+            <button class="auth-back-btn" style="margin-top:20px;" onclick="closeLobby()">← Back</button>
+        </div>
+    </div>
+
+    <!-- Country Picker Modal -->
+    <div id="country-picker-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-glass">
+            <h2 class="modal-title" id="picker-title">🌍 Choose Your Nation</h2>
+            <p class="modal-desc" id="picker-desc">Select the country you will lead to global domination.</p>
+            <div id="country-picker-grid" class="picker-grid"></div>
+        </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div id="event-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-glass event-modal-inner">
+            <div class="event-icon" id="event-icon">⚡</div>
+            <h2 class="modal-title" id="event-title">Event Title</h2>
+            <p class="modal-desc" id="event-desc">Event description here.</p>
+            <div id="event-effects" class="event-effects"></div>
+            <div class="event-actions" id="event-actions"></div>
+        </div>
+    </div>
+
+    <!-- ╔══════════════════════════════════════╗ -->
+    <!-- ║         GAME CONTAINER               ║ -->
+    <!-- ╚══════════════════════════════════════╝ -->
+    <div id="game-container" style="display:none;">
+        <canvas id="map-canvas"></canvas>
+
+        <div class="ui-layer">
+            <!-- Top Resource Bar -->
+            <!-- Top Management Bar (Dummynation-style) -->
+            <div class="top-bar" id="top-bar">
+                <div class="top-bar-left">
+                    <!-- Map Mode Selector -->
+                    <div class="map-mode-selector">
+                        <button class="map-mode-btn active" id="mode-countries"
+                            onclick="setMapMode('countries')">Countries</button>
+                        <button class="map-mode-btn" id="mode-population"
+                            onclick="setMapMode('population')">Population</button>
+                        <button class="map-mode-btn" id="mode-military"
+                            onclick="setMapMode('military')">Military</button>
+                    </div>
+                </div>
+                <div class="top-bar-center">
+                    <div class="resource-pill money" title="Treasury">
+                        <span class="res-icon">💵</span>
+                        <span class="res-rate" id="res-money-rate">(+0)</span>
+                        <span class="res-val" id="res-money">0</span>
+                    </div>
+                    <div class="resource-pill manpower" title="Manpower">
+                        <span class="res-icon">👥</span>
+                        <span class="res-rate" id="res-mp-rate">(+0)</span>
+                        <span class="res-val" id="res-manpower">0K</span>
+                    </div>
+                    <div class="resource-pill military" title="Total Troops">
+                        <span class="res-icon">⚔️</span>
+                        <span class="res-rate" id="res-troop-rate">(+0)</span>
+                        <span class="res-val" id="res-army">0</span>
+                    </div>
+                    <!-- Nation name -->
+                    <span id="player-flag" class="panel-flag" style="font-size:18px;margin-left:8px;">🏳️</span>
+                    <div class="nation-name" id="player-nation-name" style="font-size:13px;font-weight:700;">Select
+                        Nation</div>
+                    <div class="resource-pill pop" title="Population">
+                        <span class="res-icon">🏘️</span>
+                        <span class="res-val" id="res-pop">0M</span>
+                    </div>
+                    <div class="resource-pill stab" title="Stability">
+                        <span class="res-icon">⚖️</span>
+                        <span class="res-val" id="res-stability">100%</span>
+                    </div>
+                </div>
+                <div class="top-bar-right">
+                    <div class="speed-controls">
+                        <button class="speed-btn" id="speed-pause" onclick="setSpeed(0)" title="Pause">⏸</button>
+                        <button class="speed-btn active" id="speed-1" onclick="setSpeed(1)" title="Normal">▶</button>
+                        <button class="speed-btn" id="speed-2" onclick="setSpeed(2)" title="Fast">▶▶</button>
+                        <button class="speed-btn" id="speed-3" onclick="setSpeed(3)" title="Ultra">▶▶▶</button>
+                    </div>
+                    <span id="date-display" class="date-display">Jan 2024</span>
+                    <button class="icon-btn" onclick="saveGame()" title="Save Game">💾</button>
+                    <span id="user-badge" class="user-badge" style="font-size:11px;color:#a0a0bd;"></span>
+                    <button class="icon-btn" onclick="logout()" title="Exit to Menu">🚪</button>
+                </div>
+            </div>
+
+            <!-- Bottom Tab Bar -->
+            <div class="bottom-bar" id="bottom-bar">
+                <button class="tab-btn active" id="tab-overview" onclick="switchTab('overview')">
+                    <span class="tab-icon">🗺️</span>
+                    <span class="tab-label">Overview</span>
+                </button>
+                <button class="tab-btn" id="tab-economy" onclick="switchTab('economy')">
+                    <span class="tab-icon">📊</span>
+                    <span class="tab-label">Economy</span>
+                </button>
+                <button class="tab-btn" id="tab-military" onclick="switchTab('military')">
+                    <span class="tab-icon">⚔️</span>
+                    <span class="tab-label">Military</span>
+                </button>
+                <button class="tab-btn" id="tab-troops" onclick="switchTab('troops')">
+                    <span class="tab-icon">🪖</span>
+                    <span class="tab-label">Troops</span>
+                </button>
+                <button class="tab-btn" id="tab-diplomacy" onclick="switchTab('diplomacy')">
+                    <span class="tab-icon">🤝</span>
+                    <span class="tab-label">Diplomacy</span>
+                </button>
+                <button class="tab-btn" id="tab-governance" onclick="switchTab('governance')">
+                    <span class="tab-icon">🏛️</span>
+                    <span class="tab-label">Governance</span>
+                </button>
+                <button class="tab-btn" id="tab-research" onclick="switchTab('research')">
+                    <span class="tab-icon">🔬</span>
+                    <span class="tab-label">Research</span>
+                </button>
+            </div>
+
+            <!-- Side Panel (contextual — shows when you click a country) -->
+            <div class="side-panel glass-panel" id="country-panel">
+                <div class="panel-header">
+                    <div>
+                        <div class="panel-flag" id="panel-flag">🏳️</div>
+                        <div class="panel-title" id="panel-title">Country</div>
+                    </div>
+                    <button class="close-btn" onclick="closePanel()">✕</button>
+                </div>
+                <div class="panel-body" id="panel-body">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+
+            <!-- Tab Panel (Economy / Military / Diplomacy / Research) -->
+            <div class="tab-panel glass-panel" id="tab-panel" style="display:none;">
+                <div class="panel-header">
+                    <div class="panel-title" id="tab-panel-title">Economy</div>
+                    <button class="close-btn" onclick="closeTabPanel()">✕</button>
+                </div>
+                <div class="panel-body" id="tab-panel-body">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div id="notifications"></div>
+
+            <!-- Mini Map -->
+            <div class="minimap-container glass-panel" id="minimap-container">
+                <canvas id="minimap-canvas" width="200" height="120"></canvas>
+                <div class="minimap-viewport" id="minimap-viewport"></div>
+            </div>
+
+            <!-- War Alert Banner -->
+            <div class="war-banner" id="war-banner" style="display:none;">
+                <span class="war-banner-icon">⚔️</span>
+                <span class="war-banner-text" id="war-banner-text">At war with: None</span>
+            </div>
+
+            <!-- Multiplayer Turn Banner -->
+            <div class="turn-banner" id="turn-banner" style="display:none;">
+                <span class="turn-banner-flag" id="turn-flag">🏳️</span>
+                <span class="turn-banner-text" id="turn-text">Player 1's Turn</span>
+                <button class="turn-end-btn" id="end-turn-btn" onclick="endTurn()">End Turn →</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
-    <script src="js/game.js"></script>
+    <script src="js/map_data.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/systems.js"></script>
+    <script src="js/ui.js"></script>
 </body>
 
 </html>
